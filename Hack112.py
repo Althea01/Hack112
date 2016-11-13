@@ -34,7 +34,7 @@ def init(data):
     data.gap = (data.hanoiS - data.stickWidth*3)/3
     (data.blockY, data.blockX) = (49, (data.gap + data.stickWidth)/16)
     data.scrollbarX = 780
-    data.speed = (data.scrollbarX-780)//100
+    data.timerDelay = 250
     data.step=0
     data.steps=recursiveHanoi(data.Hlevel)
     data.explanation="Haha"
@@ -46,17 +46,22 @@ def init(data):
     data.toprow = data.rows - data.Hlevel
     data.isMove = False
     data.col = []
+    data.hasDrawn = False
 
 def mousePressed(event, data):
     if 720 <= event.x <= 770 and 150 <= event.y <= 200 and data.Hlevel - 1 >= 0:
         Hlevel=data.Hlevel-1
+        delay = data.timerDelay
         init(data)
         data.Hlevel =Hlevel
+        data.timerDelay = delay
         data.steps = recursiveHanoi(data.Hlevel)
     elif 930 <= event.x <= 980 and 150 <= event.y <= 200 and data.Hlevel + 1 <= 8:
         Hlevel=data.Hlevel+1
+        delay = data.timerDelay
         init(data)
         data.Hlevel =Hlevel
+        data.timerDelay = delay
         data.steps = recursiveHanoi(data.Hlevel)
     elif 720 <= event.x <= 980 and 210 <= event.y <= 260:
         init(data)
@@ -68,9 +73,10 @@ def mousePressed(event, data):
         data.scrollbarX += 5
     elif 780 <= event.x <= 920 and 390 <= event.y <= 440:
         data.scrollbarX = event.x - 15
+        data.timerDelay = 250 - (data.scrollbarX - 780) * 2
     elif 720 <= event.x <= 770 and 510 <= event.y <= 560 and data.step - 1 >= 0:
         data.step -= 1
-    elif 930 <= event.x <= 980 and 510 <= event.y <= 560 and data.step + 1 <= 8:
+    elif 930 <= event.x <= 980 and 510 <= event.y <= 560 and data.step + 1 <= 2**data.Hlevel-1:
         data.step += 1
 
 
@@ -81,7 +87,6 @@ def keyPressed(event, data):
 
 def timerFired(data):
     pass    
-    
 
 def drawCell(canvas,data,row,col,color,change):
     cx = change + data.blockX * col
@@ -114,15 +119,19 @@ def drawCell2(canvas,data,row,col,color,change):
         canvas.create_line(cx,cyBottom-1,cxBottom,cyBottom-1,fill="black",width=1)
 
 def drawDiscs(canvas,data):
-    start = data.cols//2 - data.Hlevel
-    for row in range(data.rows-1, data.rows - data.Hlevel-1, -1):
-        for col in range(start, data.cols - start):
-            try:
-                if data.isMove == False or row > data.toprow: 
-                    data.board_0[row][col] = data.Hcolor
-            except:
-                pass
-        start += 1
+    if data.hasDrawn == False:
+        start = data.cols//2 - data.Hlevel
+        for row in range(data.rows-1, data.rows - data.Hlevel-1, -1):
+            for col in range(start, data.cols - start):
+                try:
+                    if data.isMove == False or row > data.toprow: 
+                        data.board_0[row][col] = data.Hcolor
+                except:
+                    pass
+            start += 1
+        data.hasDrawn = True
+
+def drawMove(canvas,data):
     if data.row >= 0:
         moveHanoi(data)
     elif data.startrow < data.endrow: 
@@ -282,10 +291,11 @@ def drawBackground(canvas,data):
         font="Arial 24",fill="white")
 
 def redrawAll(canvas, data):
-    drawBackground(canvas,data)
+    drawBackground(canvas, data)
     drawStick(canvas, data)
     drawBoard(canvas, data)
-    drawDiscs(canvas,data)
+    drawDiscs(canvas, data)
+    drawMove(canvas, data)
 
 def run(width=1000, height=800):
     def redrawAllWrapper(canvas, data):
