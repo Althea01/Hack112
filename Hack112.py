@@ -21,7 +21,7 @@ def recursiveHanoi(n, source=0, target=1, temp=2):
     
 def init(data):
     (data.empty, data.Hcolor)= (None, "grey")
-    (data.margin, data.Hlevel) = (100, 1)
+    (data.margin, data.Hlevel) = (100, 2)
     (data.rows, data.cols) = (10, 16)
     data.board_0 = make2dList(data)
     data.board_1 = make2dList(data)
@@ -41,8 +41,10 @@ def init(data):
     data.delay=1
     (data.startB,data.targetB) = (0,0)
     data.row = 0
+    data.col = []
     data.startrow = 0
     data.endrow = isEndRow(data)
+    data.isMove = False
 
 def mousePressed(event, data):
     if 720 <= event.x <= 770 and 150 <= event.y <= 200 and data.Hlevel - 1 >= 0:
@@ -111,15 +113,18 @@ def drawCell2(canvas,data,row,col,color,change):
 def drawDiscs(canvas,data):
     start = data.cols//2 - data.Hlevel
     for row in range(data.rows-1, data.rows - data.Hlevel-1, -1):
-        for col in range(start, data.cols - start): 
-            data.board_0[row][col] = data.Hcolor
+        for col in range(start, data.cols - start):
+            if data.isMove == False or row != data.rows - data.Hlevel: 
+                data.board_0[row][col] = data.Hcolor
         start += 1
     (data.startB,data.targetB) = data.steps[data.step]
     if data.row >= 0:
-        print(data.row)
         moveHanoi(data)
     elif data.startrow <= data.endrow: 
         dropHanoi(data)
+    elif data.startrow > data.endrow:
+        if data.step + 1 < len(data.steps):
+            data.step += 1
 
 def drawBoard(canvas, data):
     for row in range(data.rows):
@@ -151,28 +156,33 @@ def findHanoi(data):
         for col in range(len(board[row])):
             if board[row][col] == "grey":
                 topHanoi += [(row,col)]
+                data.col.append(col)
         if len(topHanoi) != 0:
             return topHanoi
    
 
 def moveHanoi(data):
+    data.isMove = True
     board = data.boards[data.startB]
     topHanoi = findHanoi(data)
     for index in range(len(topHanoi)):
         (data.row,col) = topHanoi[index]
-        if data.row >= 0:
+        if data.row > 0:
             board[data.row][col] = None
             board[data.row-1][col] = "grey"
-    data.row -= 1
-        
+        elif data.row == 0:
+            board[data.row][col] = None
+    data.row -= 1     
 
 def dropHanoi(data):
     board = data.boards[data.targetB]
     topHanoi = findHanoi(data)
-    for index in range(len(topHanoi)):
-        (data.row,col) = topHanoi[index]
-        board[data.startrow][col] = None
-        board[data.startrow+1][col] = "grey"
+    for index in data.col[:2]:
+        if (data.startrow+1) < 10:
+            board[data.startrow][index] = None
+            board[data.startrow+1][index] = "grey"
+        elif data.startrow+1 == 10:
+            data.col = []
     data.startrow += 1
     
 def isEndRow(data):
@@ -276,7 +286,7 @@ def run(width=1000, height=800):
     data = Struct()
     data.width = width
     data.height = height
-    data.timerDelay = 1000 # milliseconds
+    data.timerDelay = 100 # milliseconds
     init(data)
     # create the root and the canvas
     root = Tk()
